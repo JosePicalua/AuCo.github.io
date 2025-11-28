@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato de Prestación de Servicios - Tesorería Municipal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="../celadores/formularioCelador.css">
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Generador de Contratos</h1>
+            <p>Tesorería Municipal - Sistema de Gestión de Documentos</p>
+        </div>
+
+        <div class="main-card">
+            <div class="card-header">
+                <h2>Contrato de Prestación de Servicios Profesionales</h2>
+                <p>Complete el formulario para generar el documento oficial</p>
+            </div>
+
+            <div class="form-container">
+                <form id="contratoForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numeroContrato">Número de Contrato *</label>
+                            <input type="text" id="numeroContrato" placeholder="Ej: 001-2025" value="123-2025">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nombreContratista">Nombre del Contratista *</label>
+                            <input type="text" id="nombreContratista" placeholder="Ingrese nombre completo" value="JUAN CARLOS PEREZ GOMEZ">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cedulaContratista">Cédula del Contratista *</label>
+                            <input type="text" id="cedulaContratista" placeholder="Ej: 1.234.567" value="1.234.567.890">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lugarExpedicion">Lugar de Expedición *</label>
+                            <input type="text" id="lugarExpedicion" placeholder="Ej: Bogotá" value="El Banco">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="totalContrato">Total Valor del Contrato *</label>
+                            <input type="text" id="totalContrato" placeholder="Ej: 50000000" value="50000000">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numeroPresupuesto">Número de Presupuesto Para Contrato*</label>
+                            <input type="text" id="numeroPresupuesto" placeholder="Ej: 123-2025" value="456-2025">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fechaRadicacion">Fecha de Radicación del Presupuesto*</label>
+                            <input type="text" id="fechaRadicacion" placeholder="Ej: 15 de enero de 2025" value="10 de febrero de 2025">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="anoFiscal">Año Fiscal del Presupuesto*</label>
+                            <input type="text" id="anoFiscal" placeholder="Ej: 2025" value="2025">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fechaCreacion">Fecha de Creación del Contrato *</label>
+                            <input type="text" id="fechaCreacion" placeholder="Ej: 20 de enero de 2025" value="15 de febrero de 2025">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numeroMes">Número de Meses en Duracion del COntrato *</label>
+                            <input type="number" id="numeroMes" placeholder="Ej: 1" min="1" max="12" value="2">
+                        </div>
+                    </div>
+
+                    <div class="button-container">
+                        <button type="button" class="btn btn-generate" onclick="generatePDFCelador()">
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Generar PDF
+                        </button>
+                        <button type="button" class="btn btn-toggle" onclick="togglePreview()">
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            <span id="toggleText">Mostrar Previsualización</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="preview-section hidden" id="previewContainer">
+            <h3>Previsualización del Documento</h3>
+            <div class="preview-wrapper">
+                <div class="page-preview">
+                    <div class="content-area" id="previewContent">
+                    </div>
+                </div>
+            </div>
+            <p class="preview-note">Vista previa en tiempo real del documento PDF</p>
+        </div>
+    </div>
+
+    <script src="../celadores/formularioCelador.js""></script>
+    
+</body>
+</html>
