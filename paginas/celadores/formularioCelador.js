@@ -21,6 +21,18 @@
             document.getElementById(field).addEventListener('input');
         });
 
+        /**
+         * Formatea un número agregando puntos como separador de miles.
+         * @param {number|string} num El número (ej: 50000000).
+         * @returns {string} El número formateado (ej: 50.000.000).
+         */
+        function formatNumberWithDots(num) {
+            if (typeof num === 'string') {
+                num = num.replace(/[^0-9]/g, ''); // Limpiamos cualquier caracter no numérico
+            }
+            return new Intl.NumberFormat('es-CO').format(parseInt(num, 10));
+        }
+
         // Función para convertir número a texto en español
         function numeroATexto(num) {
             const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
@@ -119,6 +131,7 @@
             const textWidth = pageWidth - margins.left - margins.right;
 
             // Función para renderizar una línea con palabras en negrita
+        // Función MEJORADA para renderizar una línea con palabras en negrita
         function renderLineWithBold(pdf, words, x, y, maxWidth, justify = false, boldWords = []) {
             const boldWordsLower = boldWords.map(w => w.toLowerCase());
             
@@ -131,6 +144,7 @@
                     pdf.text(word, currentX, y);
                     currentX += pdf.getTextWidth(word);
                     if (index < words.length - 1) {
+                        pdf.setFont('helvetica', 'normal');
                         pdf.text(' ', currentX, y);
                         currentX += pdf.getTextWidth(' ');
                     }
@@ -138,8 +152,19 @@
                 return;
             }
             
-            const lineText = words.join(' ');
-            const lineWidth = pdf.getTextWidth(lineText);
+            // Calcular el ancho real de todas las palabras (sin espacios)
+            let wordsWidth = 0;
+            const wordWidths = [];
+            
+            words.forEach((word) => {
+                const cleanWord = word.replace(/[.,;:]/g, '');
+                const shouldBeBold = boldWordsLower.includes(cleanWord.toLowerCase());
+                pdf.setFont('helvetica', shouldBeBold ? 'bold' : 'normal');
+                const wordWidth = pdf.getTextWidth(word);
+                wordWidths.push(wordWidth);
+                wordsWidth += wordWidth;
+            });
+            
             const spacesCount = words.length - 1;
             
             if (spacesCount === 0) {
@@ -150,8 +175,9 @@
                 return;
             }
             
-            const extraSpace = (maxWidth - lineWidth) / spacesCount;
-            const spaceWidth = pdf.getTextWidth(' ') + extraSpace;
+            // Calcular el espacio disponible para los espacios entre palabras
+            const totalSpaceAvailable = maxWidth - wordsWidth;
+            const spaceWidth = totalSpaceAvailable / spacesCount;
             
             let currentX = x;
             words.forEach((word, index) => {
@@ -159,7 +185,8 @@
                 const shouldBeBold = boldWordsLower.includes(cleanWord.toLowerCase());
                 pdf.setFont('helvetica', shouldBeBold ? 'bold' : 'normal');
                 pdf.text(word, currentX, y);
-                currentX += pdf.getTextWidth(word);
+                currentX += wordWidths[index];
+                
                 if (index < words.length - 1) {
                     currentX += spaceWidth;
                 }
@@ -183,12 +210,26 @@
         const nombreContratista = document.getElementById('nombreContratista').value || '[NOMBRE CONTRATISTA]';
         const cedulaContratista = document.getElementById('cedulaContratista').value || '[CEDULA CONTRATISTA]';
         const lugarExpedicion = document.getElementById('lugarExpedicion').value || '[LUGAR DE EXPEDICION]';
-        const totalContrato = document.getElementById('totalContrato').value || '[TOTAL DEL CONTRATO]';
+        const valorNumerico = document.getElementById('totalContrato').value || '0';
         const numeroPresupuesto = document.getElementById('numeroPresupuesto').value || '[NUMERO PRESUPUESTO]';
         const fechaRadicaciondePresupuesot = document.getElementById('fechaRadicacion').value || '[FECHA RADICACION DE PRESUPUESTO]';
         const anoFiscal = document.getElementById('anoFiscal').value || '[AÑO FISCAL]';
         const fechaCreacion = document.getElementById('fechaCreacion').value || '[DIA DE CREACION DEL CONTRATO]';
         const numeroMes = document.getElementById('numeroMes').value || '[NUMERO DE MES]';
+        const fechaTerminaciondecontrato = document.getElementById('fechaTerminacion').value || '[FECHA TERMINACION DEL CONTRATO]';
+        const NumeroDecretoParaContrato = document.getElementById('NumeroDecretoParaContrato').value || '[NUMERO DECRETO PARA CONTRATO]';
+        const fechaDecretoParaContrato = document.getElementById('fechaDecretoParaContrato').value || '[FECHA DEL DECRETO PARA CONTRATO]';
+
+
+        // 1. Obtener el valor formateado para el documento (ej: 50.000.000)
+        const valorFormateado = formatNumberWithDots(valorNumerico); 
+
+        // 2. Obtener el valor en letras (ej: CINCUENTA MILLONES DE PESOS COLOMBIANOS)
+        const valorEnLetras = numeroATexto(valorNumerico); 
+
+        // Puedes usar esta variable para reemplazar el placeholder en tu texto largo.
+        const totalContrato_Formateado = valorFormateado;
+        const totalContrato_EnLetras = valorEnLetras;
 
 
 
@@ -218,7 +259,7 @@
 
 // AQUÍ VA TU TEXTO LARGO (puede tener saltos de línea, se convertirá a uniforme)
 const textoContratoLargo = `Entre los suscritos a saber: ISOLINA ALICIA VIDES MARTÍNEZ, identificada con cédula de ciudadanía No 39.023.360 de El Banco, Magdalena, en su calidad de Alcalde Municipal 
-Encargada de El Banco, departamento del Magdalena, mediante Decreto No. 126 del 30 de septiembre de 2025, en uso de sus facultades y funciones como Alcalde, de conformidad con lo 
+Encargada de El Banco, departamento del Magdalena, mediante Decreto No. ${NumeroDecretoParaContrato} del ${fechaDecretoParaContrato}, en uso de sus facultades y funciones como Alcalde, de conformidad con lo 
 establecido con el artículo 314 de la Constitución Política de Colombia, y en ejercicio de las facultades conferidas en el literal b del artículo 11 de la Ley 80 de 1993, y que para 
 los efectos del presente contrato se denominará EL MUNICIPIO, y por otra parte ${nombreContratista}, identificado con cedula de ciudadanía No ${cedulaContratista} expedida en ${lugarExpedicion}, y quien actúa en nombre propio y en su condición de persona natural, se encuentra facultado para suscribir el presente documento y quien en adelante se denominará EL 
 CONTRATISTA, hemos convenido en celebrar el presente Contrato de Prestación de Servicios Profesionales, teniendo en cuenta las siguientes consideraciones: 1. La Ley 80 de 1993 en el 
@@ -245,15 +286,15 @@ suscribirá. 6. Presentar los documentos necesarios para la suscripción del res
 certificar el cumplimiento del servicio a cabalidad. 8. Prestar los servicios contratados de manera eficaz y oportuna, así como atender los requerimientos que le sean efectuados por 
 el supervisor del contrato en desarrollo del objeto contractual. 9. Las demás propias del objeto contratado que sean necesarios para dar cumplimiento. CLÁUSULA CUARTO – INFORMES. En 
 desarrollo de las cláusulas 2 y 3 del presente contrato, el Contratista deberá presentar los informes o entregables en los que dé cuenta de las actuaciones realizadas al vencimiento 
-de cada mes. CLÁUSULA QUINTA: VALOR DEL CONTRATO – FORMA DE PAGO – LUGAR DE EJECUCION DEL CONTRATO El valor del contrato asciende a la suma de ${totalContrato} incluyendo costos 
+de cada mes. CLÁUSULA QUINTA: VALOR DEL CONTRATO – FORMA DE PAGO – LUGAR DE EJECUCION DEL CONTRATO El valor del contrato asciende a la suma de ${totalContrato_Formateado}, ${totalContrato_EnLetras} incluyendo costos 
 directos e indirectos que ocasione la ejecución del contrato. El valor total del contrato será cancelado en una cuota mensuales vencida, previo informe de actividades, pago a su 
 seguridad social y recibido de conformidad por parte del Supervisor del Contrato. El lugar de ejecución del presente contrato es en el Municipio de El Banco – Magdalena. CLÁUSULA 
 SEXTA – DECLARACIONES DEL CONTRATISTA: El CONTRATISTA hace las siguientes declaraciones: 1. Conozco y acepto los documentos del proceso. 2. Tuve la oportunidad de solicitar 
 aclaraciones y modificaciones a los documentos del proceso y recibí del municipio respuesta oportuna a cada una de las solicitudes. 3. Me encuentro debidamente facultado para 
 suscribir el presente contrato. 4. Que al momento de la celebración del presente contrato no me encuentro en ninguna causal de inhabilidad e incompatibilidad. 5. Estoy a paz y salvo 
 con las obligaciones laborales y frente al sistema de seguridad social integral. 6. El valor del contrato incluye todos los gastos, costos, derechos, impuestos, tasas y demás 
-contribuciones relacionados con el cumplimiento del objeto del presente contrato. CLÁUSULA SÉPTIMA – PLAZO DE EJECUCIÓN: El plazo de ejecución del presente contrato será de un 
-${numeroMes} mes, contados a partir del Acta de Inicio. CLÁUSULA OCTAVA – DERECHOS DEL CONTRATISTA: 1. Recibir la remuneración del contrato en los términos pactados en la cláusula 
+contribuciones relacionados con el cumplimiento del objeto del presente contrato. CLÁUSULA SÉPTIMA – PLAZO DE EJECUCIÓN: El plazo de ejecución del presente contrato será de 
+${numeroMes} meses hasta ${fechaTerminaciondecontrato}, contados a partir del Acta de Inicio. CLÁUSULA OCTAVA – DERECHOS DEL CONTRATISTA: 1. Recibir la remuneración del contrato en los términos pactados en la cláusula 
 Quinta del presente Contrato. 2. Las demás consagradas en el Artículo 5 de la Ley 80 de 1993. CLÁUSULA NOVENA – OBLIGACIONES GENERALES DEL CONTRATISTA: 1. El CONTRATISTA se obliga a 
 ejecutar el objeto del contrato y a desarrollar las actividades específicas en las condiciones pactadas. 2. El Contratista debe custodiar y a la terminación del presente contrato 
 devolver los insumos, suministros, herramientas, dotación, implementación, inventarios y/o materiales que sean puestos a su disposición para la prestación del servicio objeto de este 
@@ -271,7 +312,7 @@ MUNICIPIO puede terminar, modificar y/o interpretar unilateralmente el contrato,
 Contratista cumpla con el objeto del presente Contrato. CLÁUSULA DECIMA CUARTA – CADUCIDAD: La caducidad, de acuerdo con las disposiciones y procedimientos legamente establecidos, 
 puede ser declarada por EL MUNICIPIO cuando exista un incumplimiento grave que afecte la ejecución del presente Contrato. CLÁUSULA DECIMA QUINTA – MULTAS: En caso de incumplimiento 
 a las obligaciones del CONTRATISTA derivadas del presente contrato, EL MUNICIPIO puede adelantar el procedimiento establecido en la ley e imponer multas sucesivas del 0.1% del valor 
-de la parte incumplida por cada día de mora, la cual podrá ser descontada de los créditos a favor del CONTRATISTA. CLÁUSULA DECIMA SEXTA – CLÁUSULA PENAL: En caso de declaratoria de 
+de la parte incumplida por cada día de mora, la cual podrá ser descontada de los créditos A FAVOR DEL CONTRATISTA. CLÁUSULA DECIMA SEXTA – CLÁUSULA PENAL: En caso de declaratoria de 
 caducidad o de incumplimiento total o parcial de las obligaciones del presente Contrato, EL CONTRATISTA debe pagar a EL MUNICIPIO, a título de indemnización, una suma equivalente al 
 Diez por ciento (10%). El valor pactado de la presente cláusula penal es el de la estimación anticipada de perjuicios, no obstante, la presente cláusula no impide el cobro de todos 
 los perjuicios adicionales que se causen sobre el citado valor. Este valor puede ser compensado con los montos que EL MUNICIPIO adeude al CONTRATISTA con ocasión de la ejecución del 
@@ -295,57 +336,116 @@ correspondiente. CLÁUSULA VIGÉSIMA TERCERA – SUPERVISIÓN: La supervisión d
 a cargo de la Secretaria Administrativa y Financiera. CLÁUSULA VIGÉSIMA CUARTA – ANEXOS DEL CONTRATO: Hacen parte integrante de este contrato los siguientes documentos: 1. Los 
 estudios previos. 2. Los documentos precontractuales. 3. Certificado de Disponibilidad Presupuestal. 4. Los demás que se estimen necesarios. CLÁUSULA VIGÉSIMA QUINTA – REGISTRO Y 
 APROPIACIONES PRESUPUESTALES: EL MUNICIPIO pagará AL CONTRATISTA el valor del presente Contrato con cargo al certificado de disponibilidad presupuestal N° ${numeroPresupuesto} de 
-${fechaRadicaciondePresupuesot }, por valor de $ ${totalContrato}. El presente Contrato está sujeto a registro presupuestal y el pago de su valor a las apropiaciones 
+${fechaRadicaciondePresupuesot }, por valor de $ ${valorFormateado} ${valorEnLetras} . El presente Contrato está sujeto a registro presupuestal y el pago de su valor a las apropiaciones 
 presupuestales de la Vigencia Fiscal ${anoFiscal}. CLÁUSULA VIGÉSIMA OCTAVA - CONFIDENCIALIDAD: En caso de que exista información sujeta a alguna reserva legal, las partes deben 
 mantener la confidencialidad de esta información. Para ello, debe comunicar a la otra parte que la información suministrada tiene el carácter de confidencial. CLÁUSULA VIGÉSIMA 
 NOVENA – LUGAR DE EJECUCIÓN Y DOMICILIO CONTRACTUAL: Las actividades previstas en el presente contrato se deben desarrollar en el Municipio de El Banco – Magdalena y el domicilio 
 contractual es el Municipio El Banco Magdalena. Para constancia, se firma en el Municipio de El Banco, Magdalena al ${fechaCreacion}`;
 
-// DEFINE LAS PALABRAS QUE QUIERES EN NEGRITA
-const palabrasEnNegrita = [
-    'ISOLINA', 'ALICIA', 'VIDES', 'MARTÍNEZ', 'Alcalde', 'Municipal', 'Encargada', 
-    
+            // DEFINE LAS PALABRAS QUE QUIERES EN NEGRITA
+            const palabrasEnNegrita = [
+                'ISOLINA', 'ALICIA', 'VIDES', 'MARTÍNEZ', 'Magdalena', 'MUNICIPIO', 'CONTRATISTA','CELADOR', 'BANCO', 'No','39.023.360',
+                'EL MUNICIPIO', nombreContratista, cedulaContratista,valorNumerico,fechaCreacion,anoFiscal,numeroMes,fechaRadicaciondePresupuesot,
+                lugarExpedicion,numeroPresupuesto,fechaTerminaciondecontrato,NumeroDecretoParaContrato,fechaDecretoParaContrato,valorNumerico,
+                'PRESTACION', 'SERVICIOS' , 'APOYO'  ,'GESTION' ,'COMO', 'CELADOR' ,'DIFERENTES', 'DEPENDENCIAS' , 'ALCALDIA', 'MUNICIPAL','BANCO', 'MAGDALENA',
+                'CLÁUSULA', 'PRIMERA','DEFINICIONES','OBJETO' ,'CONTRATO', 'PRESTACION', ':','QUINTA', 'PAGO' ,'EJECUCION' , 'CONTRATO' , '–' ,'ACTIVIDADES', 'ESPECÍFICAS', 'DEL',
+                'SEXTA' ,  'TERMINACIÓN', 'MODIFICACIÓN' , 'INTERPRETACIÓN' ,'UNILATERAL' ,'INDEPENDENCIA','CESIONES',':','SÉPTIMA' , 'CASO' ,'FORTUITO', 'FUERZA' ,'MAYOR',
+                'OCTAVA' , 'SOLUCIÓN' , 'CONTROVERSIAS', 'ANEXOS' ,'NOVENA' , 'LUGAR' ,'EJECUCIÓN' ,'DOMICILIO' ,'CONTRACTUAL',
+                'DECIMA' ,'PRIMERA' ,'SEGUNDA' ,'PARÁGRAFO','TERCERA' ,'CUARTA' ,'QUINTA' ,'SEXTA' ,'SÉPTIMA' ,'OCTAVA' ,'NOVENA' ,'VIGÉSIMA' ,'INDEMNIDAD','PRIMERA' ,
+                'SEGUNDA' ,'TERCERA', 'SUPERVISIÓN','CUARTA' ,'QUINTA' ,'REGISTRO' , 'APROPIACIONES'  , 'PRESUPUESTALES',':','OCTAVA' ,'CONFIDENCIALIDAD',
+                'NOVENA' , '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'LA', 'DE APOYO', 'FORMA', 'VALOR', 'DEL CONTRATO', 'EL CONTRATISTA', 'EL BANCO', 'DECRETO', 'DECRETO No.', 'DECRETO PARA CONTRATO',
+                'CADUCIDAD', 'GARANTÍAS' ,'MECANISMOS' ,'COBERTURA' ,'RIESGO', 'PRESTACION', 'DECLARACIONES', 'MAGDALENA', 'DE EL', 'PRESTACION', 'DERECHOS',
+                'CUARTO', 'OBLIGACIONES', 'GENERALES', 'INFORMES', 'DERECHOS DEL CONTRATANTE', 'DERECHOS' , 'CONTRATANTE',
+                'OBLIGACIONES GENERALES DEL CONTRATANTE', 'RESPONSABILIDAD', 'FAVOR', 'EL CONTRATISTA',
+            ];
 
-];
 
-        // Convertir texto a uniforme
-        const textoCompleto = textoContratoLargo.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
-        // Procesar el texto palabra por palabra
-        const words = textoCompleto.split(' ');
-        let currentLine = [];
-
-        words.forEach((word, wordIndex) => {
-            const testLine = [...currentLine, word].join(' ');
-            const testWidth = pdf.getTextWidth(testLine);
-            
-            if (testWidth > textWidth) {
-                if (currentLine.length > 0) {
-                    if (yPosition + lineHeight > pageHeight - margins.bottom) {
-                        pdf.addPage();
-                        yPosition = margins.top;
-                        
-                        if (watermarkBase64) {
-                            pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
-                        }
+                    // Función mejorada para calcular el ancho real de un texto con palabras en negrita
+            function getLineWidthWithBold(pdf, words, boldWords) {
+                let totalWidth = 0;
+                
+                words.forEach((word, index) => {
+                    // Eliminar signos de puntuación al final
+                    const cleanWord = word.replace(/[.,;:!?]$/g, '');
+                    
+                    // Comparación EXACTA - la palabra completa debe estar en el array
+                    const shouldBeBold = boldWords.includes(cleanWord);
+                    
+                    pdf.setFont('helvetica', shouldBeBold ? 'bold' : 'normal');
+                    totalWidth += pdf.getTextWidth(word);
+                    
+                    if (index < words.length - 1) {
+                        pdf.setFont('helvetica', 'normal');
+                        totalWidth += pdf.getTextWidth(' ');
                     }
+                });
+                
+                return totalWidth;
+            }
+
+            // Convertir texto a uniforme - MEJORADO
+            const textoCompleto = textoContratoLargo
+                .replace(/\n/g, ' ')           // Reemplazar saltos de línea
+                .replace(/\r/g, ' ')           // Reemplazar retornos de carro
+                .replace(/\t/g, ' ')           // Reemplazar tabs
+                .replace(/\s+/g, ' ')          // Reemplazar múltiples espacios por uno solo
+                .trim();                        // Eliminar espacios al inicio y final
+                        // Reemplaza la sección donde procesas el texto palabra por palabra:
+            // Procesar el texto palabra por palabra - MEJORADO
+                const words = textoCompleto.split(' ').filter(word => word.trim() !== ''); // Filtrar palabras vacías
+                let currentLine = [];
+
+                words.forEach((word, wordIndex) => {
+                    const testLine = [...currentLine, word];
                     
-                    const isLastWord = wordIndex === words.length - 1;
-                    const shouldJustify = !isLastWord && currentLine.length > 1;
+                    // USA LA NUEVA FUNCIÓN en lugar de pdf.getTextWidth
+                    const testWidth = getLineWidthWithBold(pdf, testLine, palabrasEnNegrita);
                     
-                    renderLineWithBold(pdf, currentLine, margins.left, yPosition, textWidth, shouldJustify, palabrasEnNegrita);
-                    yPosition += lineHeight;
+                    if (testWidth > textWidth) {
+                        if (currentLine.length > 0) {
+                            if (yPosition + lineHeight > pageHeight - margins.bottom) {
+                                pdf.addPage();
+                                yPosition = margins.top;
+                                
+                                if (watermarkBase64) {
+                                    pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
+                                }
+                            }
+                            
+                            const isLastWord = wordIndex === words.length - 1;
+                            const shouldJustify = !isLastWord && currentLine.length > 1;
+                            
+                            renderLineWithBold(pdf, currentLine, margins.left, yPosition, textWidth, shouldJustify, palabrasEnNegrita);
+                            yPosition += lineHeight;
+                        }
+                        
+                        currentLine = [word];
+                    } else {
+                        currentLine.push(word);
+                    }
+                });
+
+            // Última línea
+            if (currentLine.length > 0) {
+                if (yPosition + lineHeight > pageHeight - margins.bottom) {
+                    pdf.addPage();
+                    yPosition = margins.top;
+                    
+                    if (watermarkBase64) {
+                        pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
+                    }
                 }
                 
-                currentLine = [word];
-            } else {
-                currentLine.push(word);
+                renderLineWithBold(pdf, currentLine, margins.left, yPosition, textWidth, false, palabrasEnNegrita);
+                yPosition += lineHeight;
             }
-        });
 
-        // Última línea
-        if (currentLine.length > 0) {
-            if (yPosition + lineHeight > pageHeight - margins.bottom) {
+            // SECCIÓN DE FIRMAS
+            yPosition += 50; // Espacio antes de las firmas
+
+            // Verificar si hay espacio suficiente para las firmas (aproximadamente 20 unidades)
+            if (yPosition + 20 > pageHeight - margins.bottom) {
                 pdf.addPage();
                 yPosition = margins.top;
                 
@@ -353,77 +453,57 @@ const palabrasEnNegrita = [
                     pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
                 }
             }
-            
-            renderLineWithBold(pdf, currentLine, margins.left, yPosition, textWidth, false, palabrasEnNegrita);
-            yPosition += lineHeight;
+            // Calcular posiciones para dos columnas centradas
+            const colWidth = textWidth / 2;
+            const col1X = margins.left + 20; // Columna izquierda con un pequeño margen
+            const col2X = margins.left + colWidth + 20; // Columna derecha
+
+            // Primera línea: "Firmado en original" en rojo y centrado en cada columna
+            pdf.setTextColor(255, 0, 0); // Rojo
+            pdf.setFont('helvetica', 'bold');
+
+            const firmadoTexto = 'Firmado en original';
+            const firmado1Width = pdf.getTextWidth(firmadoTexto);
+            const firmado1X = col1X + (colWidth - 40 - firmado1Width) / 2;
+            const firmado2X = col2X + (colWidth - 40 - firmado1Width) / 2;
+
+            pdf.text(firmadoTexto, firmado1X, yPosition);
+            pdf.text(firmadoTexto, firmado2X, yPosition);
+            yPosition += 6;
+
+            // Segunda línea: Nombres en negrita y centrados
+            pdf.setTextColor(0, 0, 0); // Negro
+
+            const nombre1 = 'ISOLINA ALICIA VIDES MARTINEZ';
+            const nombre2 = document.getElementById('nombreContratista').value || '[NOMBRE CONTRATISTA]';
+
+            const nombre1Width = pdf.getTextWidth(nombre1);
+            const nombre2Width = pdf.getTextWidth(nombre2);
+
+            const nombre1X = col1X + (colWidth - 40 - nombre1Width) / 2;
+            const nombre2X = col2X + (colWidth - 40 - nombre2Width) / 2;
+
+            pdf.text(nombre1, nombre1X, yPosition);
+            pdf.text(nombre2, nombre2X, yPosition);
+            yPosition += 6;
+
+            // Tercera línea: Cargos en normal y centrados
+            pdf.setFont('helvetica', 'normal');
+
+            const cargo1 = 'Alcaldesa Municipal Encargada';
+            const cargo2 = 'El Contratista';
+
+            const cargo1Width = pdf.getTextWidth(cargo1);
+            const cargo2Width = pdf.getTextWidth(cargo2);
+
+            const cargo1X = col1X + (colWidth - 40 - cargo1Width) / 2;
+            const cargo2X = col2X + (colWidth - 40 - cargo2Width) / 2;
+
+            pdf.text(cargo1, cargo1X, yPosition);
+            pdf.text(cargo2, cargo2X, yPosition);
+
+
+
+            pdf.save(`CONTRATO DE ${nombreContratista} con Numero de contrato ${numeroContrato} ${fechaCreacion}.pdf`);
+        
         }
-
-        // SECCIÓN DE FIRMAS
-        yPosition += 50; // Espacio antes de las firmas
-
-        // Verificar si hay espacio suficiente para las firmas (aproximadamente 20 unidades)
-        if (yPosition + 20 > pageHeight - margins.bottom) {
-            pdf.addPage();
-            yPosition = margins.top;
-            
-            if (watermarkBase64) {
-                pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
-            }
-        }
-        // Calcular posiciones para dos columnas centradas
-        const colWidth = textWidth / 2;
-        const col1X = margins.left + 20; // Columna izquierda con un pequeño margen
-        const col2X = margins.left + colWidth + 20; // Columna derecha
-
-        // Primera línea: "Firmado en original" en rojo y centrado en cada columna
-        pdf.setTextColor(255, 0, 0); // Rojo
-        pdf.setFont('helvetica', 'bold');
-
-        const firmadoTexto = 'Firmado en original';
-        const firmado1Width = pdf.getTextWidth(firmadoTexto);
-        const firmado1X = col1X + (colWidth - 40 - firmado1Width) / 2;
-        const firmado2X = col2X + (colWidth - 40 - firmado1Width) / 2;
-
-        pdf.text(firmadoTexto, firmado1X, yPosition);
-        pdf.text(firmadoTexto, firmado2X, yPosition);
-        yPosition += 6;
-
-        // Segunda línea: Nombres en negrita y centrados
-        pdf.setTextColor(0, 0, 0); // Negro
-
-        const nombre1 = 'ISOLINA ALICIA VIDES MARTINEZ';
-        const nombre2 = document.getElementById('nombreContratista').value || '[NOMBRE CONTRATISTA]';
-
-        const nombre1Width = pdf.getTextWidth(nombre1);
-        const nombre2Width = pdf.getTextWidth(nombre2);
-
-        const nombre1X = col1X + (colWidth - 40 - nombre1Width) / 2;
-        const nombre2X = col2X + (colWidth - 40 - nombre2Width) / 2;
-
-        pdf.text(nombre1, nombre1X, yPosition);
-        pdf.text(nombre2, nombre2X, yPosition);
-        yPosition += 6;
-
-        // Tercera línea: Cargos en normal y centrados
-        pdf.setFont('helvetica', 'normal');
-
-        const cargo1 = 'Alcaldesa Municipal Encargada';
-        const cargo2 = 'El Contratista';
-
-        const cargo1Width = pdf.getTextWidth(cargo1);
-        const cargo2Width = pdf.getTextWidth(cargo2);
-
-        const cargo1X = col1X + (colWidth - 40 - cargo1Width) / 2;
-        const cargo2X = col2X + (colWidth - 40 - cargo2Width) / 2;
-
-        pdf.text(cargo1, cargo1X, yPosition);
-        pdf.text(cargo2, cargo2X, yPosition);
-
-
-
-        pdf.save(`CONTRATO DE ${nombreContratista} con Numero de contrato ${numeroContrato} ${fechaCreacion}.pdf`);
-
-
-
-            
-                }

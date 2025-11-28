@@ -40,17 +40,27 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="lugarExpedicion">Lugar de Expedición *</label>
+                            <label for="lugarExpedicion">Lugar de Expedición de Cedula*</label>
                             <input type="text" id="lugarExpedicion" placeholder="Ej: Bogotá" value="El Banco">
                         </div>
 
                         <div class="form-group">
-                            <label for="totalContrato">Total Valor del Contrato *</label>
-                            <input type="text" id="totalContrato" placeholder="Ej: 50000000" value="50000000">
+                            <label for="NumeroDecretoParaContrato">Numero de Decreto Para Realizar Contrato*</label>
+                            <input type="number" id="NumeroDecretoParaContrato" placeholder="Ej: Decreto Ratificado para Contratacion" value="">
                         </div>
 
                         <div class="form-group">
-                            <label for="numeroPresupuesto">Número de Presupuesto Para Contrato*</label>
+                            <label for="fechaDecretoParaContrato">Fecha del Decreto Actualizado para Contrato*</label>
+                            <input type="date" id="fechaDecretoParaContrato" placeholder="Ej: Decreto Ratificado para Contratacion" value="">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="totalContrato">Total Valor del Contrato *</label>
+                            <input type="text" id="totalContrato" placeholder="Ej: Dijite Cantidad Total del Contrato" value="50000000">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numeroPresupuesto">Número del Radicado de Presupuesto Para Contrato*</label>
                             <input type="text" id="numeroPresupuesto" placeholder="Ej: 123-2025" value="456-2025">
                         </div>
 
@@ -70,8 +80,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="numeroMes">Número de Meses en Duracion del COntrato *</label>
+                            <label for="numeroMes">Número de Meses en Duracion del Contrato *</label>
                             <input type="number" id="numeroMes" placeholder="Ej: 1" min="1" max="12" value="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="fechaTerminacion">Fecha de terminación de Contrato *</label>
+                            <input type="date" id="fechaTerminacion" value="2025-03-15">
                         </div>
                     </div>
 
@@ -99,7 +113,7 @@
         </div>
     </div>
 
-    <script src="../celadores/formularioCelador.js""></script>
+    <script src="/paginas/celadores/formularioCelador.js"></script>
     
 </body>
 </html>
