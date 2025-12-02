@@ -87,7 +87,7 @@
         
 
         // Función para cargar la marca de agua
-        async function loadWatermark() {
+        async function loadWatermarkFormulario() {
             try {
                 const response = await fetch('../../componentes/marcadeaguaJURIDICA.png');
                 const blob = await response.blob();
@@ -196,7 +196,7 @@
         // === INTEGRACIÓN CON TU CÓDIGO ===
 
         // Después de obtener watermarkBase64 y antes del título
-        const watermarkBase64 = await loadWatermark();
+        const watermarkBase64 = await loadWatermarkFormulario();
 
         if (watermarkBase64) {
             pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
@@ -286,7 +286,7 @@ suscribirá. 6. Presentar los documentos necesarios para la suscripción del res
 certificar el cumplimiento del servicio a cabalidad. 8. Prestar los servicios contratados de manera eficaz y oportuna, así como atender los requerimientos que le sean efectuados por 
 el supervisor del contrato en desarrollo del objeto contractual. 9. Las demás propias del objeto contratado que sean necesarios para dar cumplimiento. CLÁUSULA CUARTO – INFORMES. En 
 desarrollo de las cláusulas 2 y 3 del presente contrato, el Contratista deberá presentar los informes o entregables en los que dé cuenta de las actuaciones realizadas al vencimiento 
-de cada mes. CLÁUSULA QUINTA: VALOR DEL CONTRATO – FORMA DE PAGO – LUGAR DE EJECUCION DEL CONTRATO El valor del contrato asciende a la suma de ${totalContrato_Formateado}, ${totalContrato_EnLetras} incluyendo costos 
+de cada mes. CLÁUSULA QUINTA: VALOR DEL CONTRATO – FORMA DE PAGO – LUGAR DE EJECUCION DEL CONTRATO El valor del contrato asciende a la suma de ${totalContrato_Formateado}, incluyendo costos 
 directos e indirectos que ocasione la ejecución del contrato. El valor total del contrato será cancelado en una cuota mensuales vencida, previo informe de actividades, pago a su 
 seguridad social y recibido de conformidad por parte del Supervisor del Contrato. El lugar de ejecución del presente contrato es en el Municipio de El Banco – Magdalena. CLÁUSULA 
 SEXTA – DECLARACIONES DEL CONTRATISTA: El CONTRATISTA hace las siguientes declaraciones: 1. Conozco y acepto los documentos del proceso. 2. Tuve la oportunidad de solicitar 
@@ -505,5 +505,11 @@ contractual es el Municipio El Banco Magdalena. Para constancia, se firma en el 
 
 
             pdf.save(`CONTRATO DE ${nombreContratista} con Numero de contrato ${numeroContrato} ${fechaCreacion}.pdf`);
+
+            generarPDFActaInicio();
+            generatePDFCertificadoNoExistencia();
+            generatePDFConstanciaIdoneida();
+            generatePDFDesignacionSupervisor();
+            generatePDFEstudiosPrevios();
         
         }
