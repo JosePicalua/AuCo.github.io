@@ -58,9 +58,9 @@ function openModal(tipo) {
     if (tipo === "celador") {
         url = "paginas/celadores/formularioCelador.html";
         cssUrl = "paginas/celadores/formularioCelador.css";
-    } else if (tipo === "aseadora") {
-        url = "pages/contratos/aseadoras/fromularioAseadora.html";
-        cssUrl = "pages/contratos/aseadoras/fromularioAseadora.css";
+    } else if (tipo === "sisbenNoSupervisor") {
+        url = "paginas/sisbenNoSupervisor/formularioSisbenNo.html";
+        cssUrl = "paginas/celadores/formularioCelador.css";
     }
 
     // Cargar el CSS dinámicamente
