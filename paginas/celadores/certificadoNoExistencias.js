@@ -1,6 +1,5 @@
 async function loadWatermarkNoExistencia() {
     try {
-        // Ruta correcta desde paginas/celadores/ hacia componentes/
         const response = await fetch('../../componentes/marcadeaguaJURIDICA.png');
         
         if (!response.ok) {
@@ -9,7 +8,6 @@ async function loadWatermarkNoExistencia() {
         
         const blob = await response.blob();
         
-        // Verificar que sea una imagen válida
         if (!blob.type.startsWith('image/')) {
             throw new Error('El archivo no es una imagen válida');
         }
@@ -26,6 +24,7 @@ async function loadWatermarkNoExistencia() {
         return null;
     }
 }
+
 async function generatePDFCertificadoNoExistencia() {
     const { jsPDF } = window.jspdf;
 
@@ -84,15 +83,24 @@ async function generatePDFCertificadoNoExistencia() {
                 const shouldBeBold = phraseLength > 0;
                 
                 pdf.setFont('helvetica', shouldBeBold ? 'bold' : 'normal');
-                pdf.text(words[i], currentX, y);
-                currentX += pdf.getTextWidth(words[i]);
                 
-                if (i < words.length - 1) {
+                // Si es una frase de múltiples palabras, renderizarlas juntas
+                if (phraseLength > 1) {
+                    const phrase = words.slice(i, i + phraseLength).join(' ');
+                    pdf.text(phrase, currentX, y);
+                    currentX += pdf.getTextWidth(phrase);
+                    i += phraseLength; // Avanzar el índice por todas las palabras de la frase
+                } else {
+                    pdf.text(words[i], currentX, y);
+                    currentX += pdf.getTextWidth(words[i]);
+                    i++;
+                }
+                
+                if (i < words.length) {
                     pdf.setFont('helvetica', 'normal');
                     pdf.text(' ', currentX, y);
                     currentX += pdf.getTextWidth(' ');
                 }
-                i++;
             }
             return;
         }
@@ -107,13 +115,22 @@ async function generatePDFCertificadoNoExistencia() {
             const shouldBeBold = phraseLength > 0;
             
             pdf.setFont('helvetica', shouldBeBold ? 'bold' : 'normal');
-            const wordWidth = pdf.getTextWidth(words[i]);
-            wordWidths.push(wordWidth);
-            wordsWidth += wordWidth;
-            i++;
+            
+            if (phraseLength > 1) {
+                const phrase = words.slice(i, i + phraseLength).join(' ');
+                const wordWidth = pdf.getTextWidth(phrase);
+                wordWidths.push(wordWidth);
+                wordsWidth += wordWidth;
+                i += phraseLength;
+            } else {
+                const wordWidth = pdf.getTextWidth(words[i]);
+                wordWidths.push(wordWidth);
+                wordsWidth += wordWidth;
+                i++;
+            }
         }
         
-        const spacesCount = words.length - 1;
+        const spacesCount = wordWidths.length - 1;
         
         if (spacesCount === 0) {
             const phraseLength = isPartOfBoldPhrase(0);
@@ -129,18 +146,29 @@ async function generatePDFCertificadoNoExistencia() {
         
         let currentX = x;
         i = 0;
+        let widthIndex = 0;
         while (i < words.length) {
             const phraseLength = isPartOfBoldPhrase(i);
             const shouldBeBold = phraseLength > 0;
             
             pdf.setFont('helvetica', shouldBeBold ? 'bold' : 'normal');
-            pdf.text(words[i], currentX, y);
-            currentX += wordWidths[i];
             
-            if (i < words.length - 1) {
+            if (phraseLength > 1) {
+                const phrase = words.slice(i, i + phraseLength).join(' ');
+                pdf.text(phrase, currentX, y);
+                currentX += wordWidths[widthIndex];
+                i += phraseLength;
+            } else {
+                pdf.text(words[i], currentX, y);
+                currentX += wordWidths[widthIndex];
+                i++;
+            }
+            
+            widthIndex++;
+            
+            if (widthIndex < wordWidths.length) {
                 currentX += spaceWidth;
             }
-            i++;
         }
     }
 
@@ -161,7 +189,6 @@ async function generatePDFCertificadoNoExistencia() {
         return currentY;
     }
 
-    // Después de obtener watermarkBase64 y antes del título
     const watermarkBase64 = await loadWatermarkNoExistencia();
 
     if (watermarkBase64) {
@@ -171,18 +198,27 @@ async function generatePDFCertificadoNoExistencia() {
     pdf.setFont('helvetica');
     pdf.setFontSize(12);
 
-    
 
-    const fechaCreacion = document.getElementById('fechaCreacion').value || '[DIA DE CREACION DEL CONTRATO]';
-    const numeroContrato = document.getElementById('numeroContrato').value || '[NUMERO CONTRATO]';
+    function formatearFechaLarga(fecha) {
+            if (!fecha) return '';
+            
+            const meses = [
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+            ];
 
+            const [anio, mes, dia] = fecha.split("-");
+            const nombreMes = meses[parseInt(mes) - 1];
 
-    // Definir las frases completas que irán en negrita
+            return `${parseInt(dia)} de ${nombreMes} del ${anio}`;
+        }
+    const fechaCreacion = formatearFechaLarga(document.getElementById('fechaCreacion').value);
+    const numeroContrato = document.getElementById('numeroContrato').value || '';
+
     const boldPhrases = [
         'PRESTACION DE SERVICIOS DE APOYO A LA GESTION COMO CELADOR EN LAS DIFERENTES DEPENDENCIAS DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA'
     ];
 
-    // Definir yPosition UNA SOLA VEZ
     let yPosition = margins.top;
     const lineHeight = 5;
 
@@ -202,7 +238,7 @@ async function generatePDFCertificadoNoExistencia() {
 
     // Título SECUNDARIO (texto normal)
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal'); // ← Cambiar DESPUÉS del primer título
+    pdf.setFont('helvetica', 'normal');
 
     const tituloTextoSecundario = `En cumplimiento a lo establecido por el artículo 3, del Decreto 1737 de 1998, modificado por artículo 1 del Decreto 2209 del de 1998`;
     const tituloLineasSecundario = pdf.splitTextToSize(tituloTextoSecundario, textWidth);
@@ -242,7 +278,7 @@ async function generatePDFCertificadoNoExistencia() {
     yPosition += 10;
 
     // Tercer párrafo
-    const textoContratoLargoCertificadoTercero = `Dada en El Banco, Magdalena al Primer ${fechaCreacion}.`;
+    const textoContratoLargoCertificadoTercero = `Dada en El Banco, Magdalena al ${fechaCreacion}.`;
 
     yPosition = renderParagraph(pdf, textoContratoLargoCertificadoTercero, margins.left, yPosition, textWidth, lineHeight, true, []);
     yPosition += 15;
@@ -269,8 +305,3 @@ async function generatePDFCertificadoNoExistencia() {
     // Guardar el PDF
     pdf.save(`Certificado_No_Existencia_${numeroContrato}_${fechaCreacion}.pdf`);
 }
-
-
-
-
-

@@ -87,103 +87,143 @@ async function generatePDFConstanciaIdoneida() {
         return segments.length > 0 ? segments : [{ text: text, bold: false }];
     }
 
-    // Función mejorada para renderizar línea con espaciado uniforme
-    function renderLineWithBold(pdf, line, x, y, maxWidth, justify = false, boldPhrases = []) {
-        const segments = findBoldSegments(line, boldPhrases);
+    // Función para dividir texto en palabras respetando frases en negrita
+    function dividirTextoEnPalabras(texto, boldPhrases = []) {
+        // Ordenar frases por longitud (más largas primero) para evitar conflictos
+        const frasesOrdenadas = [...boldPhrases].sort((a, b) => b.length - a.length);
         
-        if (!justify) {
-            let currentX = x;
-            segments.forEach(segment => {
-                pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
-                pdf.text(segment.text, currentX, y);
-                currentX += pdf.getTextWidth(segment.text);
+        // Marcar las frases en negrita con delimitadores especiales
+        let textoMarcado = texto;
+        const marcadores = [];
+        
+        frasesOrdenadas.forEach((frase, idx) => {
+            const marcador = `§BOLD${idx}§`;
+            const regex = new RegExp(frase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            textoMarcado = textoMarcado.replace(regex, (match) => {
+                marcadores.push({ marcador, texto: match, bold: true });
+                return marcador;
             });
-            return;
-        }
+        });
         
-        // Para justificación: calcular anchos
-        const words = line.split(/\s+/).filter(w => w.length > 0);
-        if (words.length <= 1) {
-            segments.forEach(segment => {
-                pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
-                pdf.text(segment.text, x, y);
-            });
-            return;
-        }
+        // Dividir en palabras manteniendo los marcadores
+        const palabras = textoMarcado.split(/\s+/).filter(w => w.length > 0);
         
-        // Calcular ancho total de palabras
-        let totalWordsWidth = 0;
-        const wordData = [];
+        // Reemplazar marcadores por objetos de palabra
+        return palabras.map(palabra => {
+            const marcadorEncontrado = marcadores.find(m => palabra.includes(m.marcador));
+            if (marcadorEncontrado) {
+                return {
+                    texto: palabra.replace(marcadorEncontrado.marcador, marcadorEncontrado.texto),
+                    bold: true
+                };
+            }
+            return { texto: palabra, bold: false };
+        });
+    }
+
+    // Función para dividir palabras en líneas respetando el ancho máximo
+    function dividirEnLineas(pdf, palabras, anchoMaximo) {
+        const lineas = [];
+        let lineaActual = [];
         
-        let charIndex = 0;
-        words.forEach(word => {
-            const wordSegments = [];
-            let wordWidth = 0;
+        palabras.forEach(palabra => {
+            const prueba = [...lineaActual, palabra];
             
-            // Encontrar qué segmentos contienen esta palabra
-            segments.forEach(segment => {
-                const segmentStart = line.indexOf(segment.text, charIndex);
-                const segmentEnd = segmentStart + segment.text.length;
-                const wordStart = line.indexOf(word, charIndex);
-                const wordEnd = wordStart + word.length;
-                
-                // Si hay intersección entre palabra y segmento
-                if (wordStart < segmentEnd && wordEnd > segmentStart) {
-                    const overlapStart = Math.max(wordStart, segmentStart);
-                    const overlapEnd = Math.min(wordEnd, segmentEnd);
-                    const overlapText = line.substring(overlapStart, overlapEnd);
-                    
-                    pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
-                    const width = pdf.getTextWidth(overlapText);
-                    
-                    wordSegments.push({
-                        text: overlapText,
-                        bold: segment.bold,
-                        width: width
-                    });
-                    wordWidth += width;
+            // Calcular ancho de la línea de prueba
+            let anchoTotal = 0;
+            prueba.forEach((p, idx) => {
+                pdf.setFont('helvetica', p.bold ? 'bold' : 'normal');
+                anchoTotal += pdf.getTextWidth(p.texto);
+                if (idx < prueba.length - 1) {
+                    anchoTotal += pdf.getTextWidth(' ');
                 }
             });
             
-            wordData.push({ segments: wordSegments, width: wordWidth });
-            totalWordsWidth += wordWidth;
-            charIndex = line.indexOf(word, charIndex) + word.length;
+            if (anchoTotal <= anchoMaximo) {
+                lineaActual.push(palabra);
+            } else {
+                if (lineaActual.length > 0) {
+                    lineas.push(lineaActual);
+                }
+                lineaActual = [palabra];
+            }
         });
         
-        // Calcular espaciado uniforme
-        const spacesCount = words.length - 1;
-        const totalSpaceWidth = maxWidth - totalWordsWidth;
-        const spaceWidth = totalSpaceWidth / spacesCount;
+        if (lineaActual.length > 0) {
+            lineas.push(lineaActual);
+        }
         
-        // Renderizar con espaciado uniforme
-        let currentX = x;
-        wordData.forEach((word, index) => {
-            word.segments.forEach(segment => {
-                pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
-                pdf.text(segment.text, currentX, y);
-                currentX += segment.width;
+        return lineas;
+    }
+
+    // Función para renderizar línea con justificación y negritas
+    function renderLineWithBold(pdf, palabras, x, y, maxWidth, justify = false) {
+        if (palabras.length === 0) return;
+        
+        // Si no hay justificación o es una sola palabra, renderizar normalmente
+        if (!justify || palabras.length === 1) {
+            let currentX = x;
+            palabras.forEach(palabra => {
+                pdf.setFont('helvetica', palabra.bold ? 'bold' : 'normal');
+                pdf.text(palabra.texto, currentX, y);
+                currentX += pdf.getTextWidth(palabra.texto);
+                currentX += pdf.getTextWidth(' ');
             });
+            return;
+        }
+        
+        // Calcular ancho total de las palabras (sin espacios)
+        let anchoTotalPalabras = 0;
+        palabras.forEach(palabra => {
+            pdf.setFont('helvetica', palabra.bold ? 'bold' : 'normal');
+            anchoTotalPalabras += pdf.getTextWidth(palabra.texto);
+        });
+        
+        // Calcular espacio entre palabras
+        const numEspacios = palabras.length - 1;
+        const espacioTotal = maxWidth - anchoTotalPalabras;
+        const espacioPorHueco = espacioTotal / numEspacios;
+        
+        // Renderizar cada palabra con el espaciado calculado
+        let currentX = x;
+        palabras.forEach((palabra, index) => {
+            pdf.setFont('helvetica', palabra.bold ? 'bold' : 'normal');
+            pdf.text(palabra.texto, currentX, y);
+            currentX += pdf.getTextWidth(palabra.texto);
             
-            if (index < wordData.length - 1) {
-                currentX += spaceWidth;
+            // Agregar espacio calculado (excepto después de la última palabra)
+            if (index < palabras.length - 1) {
+                currentX += espacioPorHueco;
             }
         });
     }
 
-    // Función para renderizar párrafo completo
+    // Función principal para renderizar párrafo completo
     function renderParagraph(pdf, text, x, startY, maxWidth, lineHeight, justify = false, boldPhrases = []) {
-        pdf.setFont('helvetica', 'normal');
-        const lines = pdf.splitTextToSize(text, maxWidth);
+        // 1. Limpiar el texto
+        const textoLimpio = text
+            .replace(/\n/g, ' ')
+            .replace(/\r/g, ' ')
+            .replace(/\t/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        // 2. Dividir en palabras marcando las que son bold
+        const palabras = dividirTextoEnPalabras(textoLimpio, boldPhrases);
+        
+        // 3. Dividir en líneas respetando el ancho máximo
+        const lineas = dividirEnLineas(pdf, palabras, maxWidth);
+        
+        // 4. Renderizar cada línea
         let currentY = startY;
-
-        lines.forEach((line, index) => {
-            const isLastLine = index === lines.length - 1;
-            const shouldJustify = justify && !isLastLine;
+        lineas.forEach((palabrasLinea, index) => {
+            const esUltimaLinea = index === lineas.length - 1;
+            const debeJustificar = justify && !esUltimaLinea;
             
-            renderLineWithBold(pdf, line, x, currentY, maxWidth, shouldJustify, boldPhrases);
+            renderLineWithBold(pdf, palabrasLinea, x, currentY, maxWidth, debeJustificar);
             currentY += lineHeight;
         });
-
+        
         return currentY;
     }
 
@@ -193,15 +233,41 @@ async function generatePDFConstanciaIdoneida() {
         pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
     }
 
+    function formatearFechaLarga(fecha) {
+            if (!fecha) return '';
+            
+            const meses = [
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+            ];
+
+            const [anio, mes, dia] = fecha.split("-");
+            const nombreMes = meses[parseInt(mes) - 1];
+
+            return `${parseInt(dia)} de ${nombreMes} del ${anio}`;
+        }
+
     // Obtener datos del formulario
-    const nombreContratista = document.getElementById('nombreContratista').value || '[NOMBRE CONTRATISTA]';
-    const cedulaContratista = document.getElementById('cedulaContratista').value || '[CEDULA CONTRATISTA]';
-    const fechaCreacion = document.getElementById('fechaCreacion').value || '[DIA DE CREACION DEL CONTRATO]';
-    const numeroContrato = document.getElementById('numeroContrato').value || '[NUMERO CONTRATO]';
+    const nombreContratista = document.getElementById('nombreContratista').value || '';
+    const cedulaContratista = document.getElementById('cedulaContratista').value || '';
+    const fechaCreacion = formatearFechaLarga(document.getElementById('fechaCreacion').value);
+    const numeroContrato = document.getElementById('numeroContrato').value || '';
+    const lugarExpedicion = document.getElementById('lugarExpedicion').value || '';
+    
+
 
     // Frases en negrita
     const boldPhrases = [
-        'PRESTACION DE SERVICIOS DE APOYO A LA GESTION COMO CELADOR EN LAS DIFERENTES DEPENDENCIAS DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA'
+        '"PRESTACION DE SERVICIOS D',
+        'APOYO A LA GESTION COMO CELADOR EN LAS DIFERENTES DEPENDENCIAS DE L',
+        'ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA"',
+        'Decreto 1082 de 2015',
+        nombreContratista,
+        cedulaContratista,
+        lugarExpedicion,
+        fechaCreacion,
+        numeroContrato,
+
     ];
 
     let yPosition = margins.top;
@@ -226,7 +292,7 @@ async function generatePDFConstanciaIdoneida() {
     yPosition += 7;
 
     // Segundo párrafo
-    const textoParrafo2 = `Ante lo cual me permito certificar que Previo el Estudio y Evaluación realizado a la hoja de vida ${nombreContratista}, identificado con cedula de ciudadanía No ${cedulaContratista} expedida en El Banco, Magdalena, esta persona posee la idoneidad y experiencia suficientes para suplir la necesidad del servicio`;
+    const textoParrafo2 = `Ante lo cual me permito certificar que Previo el Estudio y Evaluación realizado a la hoja de vida ${nombreContratista}, identificado con cedula de ciudadanía No ${cedulaContratista} expedida   en ${lugarExpedicion}, esta persona posee la idoneidad y experiencia suficientes para suplir la necesidad del servicio`;
     
     yPosition = renderParagraph(pdf, textoParrafo2, margins.left, yPosition, textWidth, lineHeight, true, []);
     yPosition += 10;

@@ -203,41 +203,56 @@ async function generatePDFEstudiosPrevios() {
             return;
         }
         
-        // Calcular ancho total de palabras
+        // Calcular ancho total de palabras usando posiciones exactas
         let totalWordsWidth = 0;
         const wordData = [];
         
-        let charIndex = 0;
+        // Reconstruir la línea con posiciones exactas de palabras
+        let linePosition = 0;
+        const wordPositions = [];
+        
         words.forEach(word => {
+            const wordStart = line.indexOf(word, linePosition);
+            const wordEnd = wordStart + word.length;
+            wordPositions.push({ word, start: wordStart, end: wordEnd });
+            linePosition = wordEnd;
+        });
+        
+        // Para cada palabra, encontrar sus segmentos
+        wordPositions.forEach(wordPos => {
             const wordSegments = [];
             let wordWidth = 0;
             
+            // Encontrar qué segmentos se solapan con esta palabra
+            let segmentPosition = 0;
             segments.forEach(segment => {
-                const segmentStart = line.indexOf(segment.text, charIndex);
+                const segmentStart = segmentPosition;
                 const segmentEnd = segmentStart + segment.text.length;
-                const wordStart = line.indexOf(word, charIndex);
-                const wordEnd = wordStart + word.length;
                 
-                if (wordStart < segmentEnd && wordEnd > segmentStart) {
-                    const overlapStart = Math.max(wordStart, segmentStart);
-                    const overlapEnd = Math.min(wordEnd, segmentEnd);
+                // Verificar si hay solapamiento
+                if (wordPos.start < segmentEnd && wordPos.end > segmentStart) {
+                    const overlapStart = Math.max(wordPos.start, segmentStart);
+                    const overlapEnd = Math.min(wordPos.end, segmentEnd);
                     const overlapText = line.substring(overlapStart, overlapEnd);
                     
-                    pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
-                    const width = pdf.getTextWidth(overlapText);
-                    
-                    wordSegments.push({
-                        text: overlapText,
-                        bold: segment.bold,
-                        width: width
-                    });
-                    wordWidth += width;
+                    if (overlapText.length > 0) {
+                        pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
+                        const width = pdf.getTextWidth(overlapText);
+                        
+                        wordSegments.push({
+                            text: overlapText,
+                            bold: segment.bold,
+                            width: width
+                        });
+                        wordWidth += width;
+                    }
                 }
+                
+                segmentPosition = segmentEnd;
             });
             
             wordData.push({ segments: wordSegments, width: wordWidth });
             totalWordsWidth += wordWidth;
-            charIndex = line.indexOf(word, charIndex) + word.length;
         });
         
         // Calcular espaciado uniforme
@@ -298,15 +313,19 @@ async function generatePDFEstudiosPrevios() {
         pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
     }
 
-    const numeroMeses = parseInt(document.getElementById('numeroMes').value) || 1;
-    const valorNumerico = document.getElementById('totalContrato')?.value || '';
+    
     const nombreContratista = document.getElementById('nombreContratista')?.value || '';
+    const valorTotal = document.getElementById('totalContrato').value; // "1000000"
+    const valorFormateado = Number(valorTotal).toLocaleString('es-CO'); // "1.000.000"
+    const numeroMes = document.getElementById('numeroMes').value || '';
+    
 
     // Definir frases en negrita
     const boldPhrases = [
         'ESTUDIOS PREVIOS',
         'DESCRIPCIÓN DE LA NECESIDAD QUE LA ENTIDAD PRETENDE SATISFACER',
-        'PRESTACION DE SERVICIOS DE APOYO A LA GESTION COMO CELADOR EN LAS DIFERENTES DEPENDENCIAS DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA.',
+        'PRESTACION DE SERVICIOS DE APOYO A LA GESTION COMO CELADOR EN LAS DIFERENTES',
+        'DEPENDENCIAS DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA.',
         'OBJETO A CONTRATAR CON SUS ESPECIFICACIONES',
         'CLASIFICACION DEL SERVICIO: CODIGO UNSPSC 80111620.',
         'PLAZO DE EJECUCIÓN – VALOR ESTIMADO – FORMA DE PAGO – LUGAR DE EJECUCION DEL CONTRATO:',
@@ -314,7 +333,14 @@ async function generatePDFEstudiosPrevios() {
         'ANÁLISIS DE RIESGO Y LA FORMA DE MITIGARLO:',
         'INDICACIÓN SI EL PROCESO DE CONTRATACIÓN ESTÁ COBIJADO POR UN ACUERDO COMERCIAL.',
         'LOS CRITERIOS PARA SELECCIONAR LA OFERTA MAS FAVORABLE:',
-        'SUPERVISIÓN:'
+        'SUPERVISIÓN:',
+        'PLAZO DE EJECUCIÓN – VALOR ESTIMADO – FORMA DE PAGO – LUGAR DE EJECUCION',
+        'DEL CONTRATO:',
+        'INDICACIÓN SI EL PROCESO DE CONTRATACIÓN ESTÁ COBIJADO POR UN ACUERDO',
+        'COMERCIAL.',
+        'ARTÍCULO PRIMERO:',
+        'ARTÍCULO SEGUNDO:'
+
     ];
 
     let currentY = margins.top;
@@ -379,10 +405,10 @@ async function generatePDFEstudiosPrevios() {
     currentY += 3;
 
     currentY = checkAndAddPage(pdf, currentY, 30);
-    const plazoTexto = `El plazo de ejecución del presente contrato es de un (1) mes, contados a partir del Acta de Inicio. 
-    El valor del contrato asciende a la suma de ${valorNumerico} Pesos Colombianos m/cte ($ ${valorNumerico}), 
+    const plazoTexto = `El plazo de ejecución del presente contrato es de un (${numeroMes}) mes, contados a partir del Acta de Inicio. 
+    El valor del contrato asciende a la suma de ($${valorFormateado} Pesos Colombianos m/cte), 
     incluyendo costos prestacionales que ocasione la ejecución del contrato. El valor total del contrato será 
-    cancelado en una cuota mensual vencida, por valor de ${valorNumerico}, previo informe de actividades, pago 
+    cancelado en una cuota mensual vencida, por valor de ${valorFormateado} Pesos Colombianos m/cte, previo informe de actividades, pago 
     a su seguridad social y recibido a satisfacción de conformidad por parte del Supervisor del Contrato. 
     El lugar de ejecución del presente contrato es en el Municipio de El Banco - Magdalena.`;
     currentY = renderParagraph(pdf, plazoTexto, margins.left, currentY, textWidth, lineHeight, true, boldPhrases);

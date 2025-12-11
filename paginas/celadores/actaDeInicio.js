@@ -55,14 +55,30 @@
             const mensual = valor / numeroMeses;
             return '$ ' + mensual.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0});
         }
+
+
+        function formatearFechaLarga(fecha) {
+            if (!fecha) return '';
+            
+            const meses = [
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+            ];
+
+            const [anio, mes, dia] = fecha.split("-");
+            const nombreMes = meses[parseInt(mes) - 1];
+
+            return `${parseInt(dia)} de ${nombreMes} del ${anio}`;
+        }
+        
         
         // Función para generar el contenido del PDF
         function generarContenidoPDFdeActaInicio() {
                 const numeroContrato = document.getElementById('numeroContrato').value;
-                const fechaContrato = document.getElementById('fechaCreacion').value || '[DIA DE CREACION DEL CONTRATO]';
-                const fechaInicio = document.getElementById('fechaCreacion').value || '[DIA DE CREACION DEL CONTRATO]';
-                
-                const valorTotal = document.getElementById('totalContrato').value;
+                const fechaContrato = formatearFechaLarga(document.getElementById('fechaCreacion').value);
+                const fechaInicio = formatearFechaLarga(document.getElementById('fechaCreacion').value);
+                const valorTotal = document.getElementById('totalContrato').value; // "1000000"
+                const valorFormateado = Number(valorTotal).toLocaleString('es-CO'); // "1.000.000"
                 const numeroMeses = parseInt(document.getElementById('numeroMes').value) || 1;
                 const nombreContratista = document.getElementById('nombreContratista').value;
                 const cedulaContratista = document.getElementById('cedulaContratista').value;
@@ -70,6 +86,8 @@
                 const valorMensual = calcularValorMensual(valorTotal, numeroMeses);
                 const textoMeses = numeroMeses === 1 ? 'una cuota mensual' : `${numeroMeses} cuotas mensuales`;
                 const palabraMes = numeroMeses === 1 ? 'mes' : 'meses';
+                const lugarExpedicion = document.getElementById('lugarExpedicion').value || '';
+
 
                 const objeto = `PRESTACION DE SERVICIOS DE APOYO A LA GESTION COMO CELADOR EN LAS DIFERENTES DEPENDENCIAS DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA`;
 
@@ -83,7 +101,7 @@
                         { campo: 'CIUDAD', valor: 'El Banco – Magdalena' },
                         { campo: 'CONTRATO No', valor: `${numeroContrato} DE FECHA ${fechaContrato}` },
                         { campo: 'OBJETO', valor: objeto },
-                        { campo: 'VALOR', valor: valorTotal },
+                        { campo: 'VALOR', valor: valorFormateado},
                         { campo: 'ANTICIPO:', valor: '$ 0' },
                         { campo: 'FORMA DE PAGO:', valor: formaPago },
                         { campo: 'NOMBRE DEL CONTRATISTA', valor: nombreContratista },
@@ -98,7 +116,7 @@
                     textoActa: `Los suscritos ISOLINA ALICIA VIDES MARTINEZ, identificada con la cédula de ciudadanía No 39.023.360 
                             expedida en El Banco, Magdalena, en calidad de Secretaria Administrativa y Financiera Municipal, designada por el 
                             señor alcalde municipal como supervisora del presente contrato, ${nombreContratista}, identificado con cedula de 
-                            ciudadanía No ${cedulaContratista || '__________'} expedida en El Banco, Magdalena, dejan constancia del inicio 
+                            ciudadanía No ${cedulaContratista} expedida en ${lugarExpedicion}, dejan constancia del inicio 
                             del contrato anteriormente citado, previo cumplimiento de los requisitos de perfeccionamiento y presentación de todos 
                             los soportes documentales exigidos.\n\nPara constancia de lo anterior, se firma la presente acta bajo la responsabilidad 
                             expresa de los que intervienen en ella.`,
@@ -213,36 +231,83 @@
             pdf.setFont(undefined, 'normal');
             const lineHeight = 5;
 
-            // 1. Unificar y limpiar el texto. ESTE PASO ES CLAVE para la justificación.
+            // 1. Unificar y limpiar el texto
             const textoLimpio = contenido.textoActa
                 .replace(/\n/g, ' ') 
                 .replace(/\r/g, ' ')
                 .replace(/\t/g, ' ')
-                .replace(/\s+/g, ' ') // Reducir múltiples espacios a uno solo
+                .replace(/\s+/g, ' ')
                 .trim();
 
-            // 2. Dividir el texto en un array de líneas que caben en el ancho del documento (textWidth)
-            const lineasActa = pdf.splitTextToSize(textoLimpio, textWidth);
+            // 2. Función para justificar texto manualmente
+            function justificarTexto(texto, anchoMaximo) {
+                const palabras = texto.split(' ');
+                const lineas = [];
+                let lineaActual = [];
+                
+                palabras.forEach(palabra => {
+                    const pruebaLinea = [...lineaActual, palabra].join(' ');
+                    const anchoLinea = pdf.getTextWidth(pruebaLinea);
+                    
+                    if (anchoLinea <= anchoMaximo) {
+                        lineaActual.push(palabra);
+                    } else {
+                        if (lineaActual.length > 0) {
+                            lineas.push(lineaActual);
+                        }
+                        lineaActual = [palabra];
+                    }
+                });
+                
+                if (lineaActual.length > 0) {
+                    lineas.push(lineaActual);
+                }
+                
+                return lineas;
+            }
 
-            // 3. Recorrer el array e imprimir cada línea con justificación
-            lineasActa.forEach(linea => {
+            // 3. Función para imprimir línea justificada
+            function imprimirLineaJustificada(palabras, x, y, anchoMaximo, esUltimaLinea = false) {
+                if (palabras.length === 0) return;
+                
+                // Si es la última línea o solo hay una palabra, alinear a la izquierda
+                if (esUltimaLinea || palabras.length === 1) {
+                    pdf.text(palabras.join(' '), x, y);
+                    return;
+                }
+                
+                // Calcular el ancho total del texto sin espacios extras
+                const textoSinEspacios = palabras.join('');
+                const anchoTexto = pdf.getTextWidth(textoSinEspacios);
+                
+                // Calcular el espacio total disponible para los espacios entre palabras
+                const espacioTotal = anchoMaximo - anchoTexto;
+                const numEspacios = palabras.length - 1;
+                const espacioPorHueco = espacioTotal / numEspacios;
+                
+                // Imprimir cada palabra con el espacio calculado
+                let xActual = x;
+                palabras.forEach((palabra, index) => {
+                    pdf.text(palabra, xActual, y);
+                    xActual += pdf.getTextWidth(palabra);
+                    if (index < palabras.length - 1) {
+                        xActual += espacioPorHueco;
+                    }
+                });
+            }
 
-                // Manejo de salto de página dentro del bucle
+            // 4. Dividir el texto en líneas respetando palabras completas
+            const lineasJustificadas = justificarTexto(textoLimpio, textWidth);
+
+            // 5. Imprimir cada línea justificada
+            lineasJustificadas.forEach((palabras, index) => {
                 if (yPos + lineHeight > pageHeight - margins.bottom) {
                     pdf.addPage();
                     yPos = margins.top;
                 }
-
-                // **Imprimir la línea con alineación 'justify'**
-                pdf.text(
-                    linea,
-                    margins.left, // Empieza en el margen izquierdo
-                    yPos,
-                    {
-                        align: 'justify',
-                        maxWidth: textWidth // El ancho máximo para la justificación
-                    }
-                );
+                
+                const esUltimaLinea = (index === lineasJustificadas.length - 1);
+                imprimirLineaJustificada(palabras, margins.left, yPos, textWidth, esUltimaLinea);
                 yPos += lineHeight;
             });
 

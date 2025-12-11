@@ -120,6 +120,57 @@ async function generatePDFDesignacionSupervisor() {
         return parts;
     }
 
+    // Función para encontrar segmentos en negrita
+    function findBoldSegments(text, boldPhrases = []) {
+        if (!boldPhrases || boldPhrases.length === 0) {
+            return [{ text: text, bold: false }];
+        }
+        
+        const segments = [];
+        let remaining = text;
+        let position = 0;
+        
+        while (remaining.length > 0) {
+            let foundMatch = false;
+            
+            for (const phrase of boldPhrases) {
+                const upperRemaining = remaining.toUpperCase();
+                const upperPhrase = phrase.toUpperCase();
+                const index = upperRemaining.indexOf(upperPhrase);
+                
+                if (index === 0) {
+                    const matchedText = remaining.substring(0, phrase.length);
+                    segments.push({ text: matchedText, bold: true });
+                    remaining = remaining.substring(phrase.length);
+                    position += phrase.length;
+                    foundMatch = true;
+                    break;
+                }
+            }
+            
+            if (!foundMatch) {
+                let nextBoldIndex = remaining.length;
+                
+                for (const phrase of boldPhrases) {
+                    const upperRemaining = remaining.toUpperCase();
+                    const upperPhrase = phrase.toUpperCase();
+                    const index = upperRemaining.indexOf(upperPhrase);
+                    
+                    if (index > 0 && index < nextBoldIndex) {
+                        nextBoldIndex = index;
+                    }
+                }
+                
+                const normalText = remaining.substring(0, nextBoldIndex);
+                segments.push({ text: normalText, bold: false });
+                remaining = remaining.substring(nextBoldIndex);
+                position += nextBoldIndex;
+            }
+        }
+        
+        return segments;
+    }
+
     // Función mejorada para dividir texto en líneas con manejo de palabras largas
     function splitTextToLinesWithHyphenation(pdf, text, maxWidth, boldPhrases = []) {
         const words = text.split(/\s+/).filter(w => w.length > 0);
@@ -177,10 +228,11 @@ async function generatePDFDesignacionSupervisor() {
         return lines;
     }
 
-    // Función mejorada para renderizar línea con espaciado uniforme
+    // Función CORREGIDA para renderizar línea con espaciado uniforme
     function renderLineWithBold(pdf, line, x, y, maxWidth, justify = false, boldPhrases = []) {
         const segments = findBoldSegments(line, boldPhrases);
         
+        // Modo sin justificación: renderizado simple
         if (!justify) {
             let currentX = x;
             segments.forEach(segment => {
@@ -194,6 +246,7 @@ async function generatePDFDesignacionSupervisor() {
         // Para justificación: calcular anchos
         const words = line.split(/\s+/).filter(w => w.length > 0);
         if (words.length <= 1) {
+            // Una sola palabra no se justifica
             let currentX = x;
             segments.forEach(segment => {
                 pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
@@ -203,58 +256,43 @@ async function generatePDFDesignacionSupervisor() {
             return;
         }
         
-        // Calcular ancho total de palabras
+        // CORRECCIÓN: Calcular segmentos por palabra correctamente
+        const wordSegmentsArray = [];
         let totalWordsWidth = 0;
-        const wordData = [];
         
-        let charIndex = 0;
         words.forEach(word => {
-            const wordSegments = [];
+            const wordSegments = findBoldSegments(word, boldPhrases);
             let wordWidth = 0;
             
-            segments.forEach(segment => {
-                const segmentStart = line.indexOf(segment.text, charIndex);
-                const segmentEnd = segmentStart + segment.text.length;
-                const wordStart = line.indexOf(word, charIndex);
-                const wordEnd = wordStart + word.length;
-                
-                if (wordStart < segmentEnd && wordEnd > segmentStart) {
-                    const overlapStart = Math.max(wordStart, segmentStart);
-                    const overlapEnd = Math.min(wordEnd, segmentEnd);
-                    const overlapText = line.substring(overlapStart, overlapEnd);
-                    
-                    pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
-                    const width = pdf.getTextWidth(overlapText);
-                    
-                    wordSegments.push({
-                        text: overlapText,
-                        bold: segment.bold,
-                        width: width
-                    });
-                    wordWidth += width;
-                }
+            wordSegments.forEach(segment => {
+                pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
+                wordWidth += pdf.getTextWidth(segment.text);
             });
             
-            wordData.push({ segments: wordSegments, width: wordWidth });
+            wordSegmentsArray.push({
+                segments: wordSegments,
+                width: wordWidth
+            });
+            
             totalWordsWidth += wordWidth;
-            charIndex = line.indexOf(word, charIndex) + word.length;
         });
         
-        // Calcular espaciado uniforme
+        // Calcular espaciado uniforme entre palabras
         const spacesCount = words.length - 1;
         const totalSpaceWidth = maxWidth - totalWordsWidth;
         const spaceWidth = totalSpaceWidth / spacesCount;
         
         // Renderizar con espaciado uniforme
         let currentX = x;
-        wordData.forEach((word, index) => {
-            word.segments.forEach(segment => {
+        wordSegmentsArray.forEach((wordData, wordIndex) => {
+            wordData.segments.forEach(segment => {
                 pdf.setFont('helvetica', segment.bold ? 'bold' : 'normal');
                 pdf.text(segment.text, currentX, y);
-                currentX += segment.width;
+                currentX += pdf.getTextWidth(segment.text);
             });
             
-            if (index < wordData.length - 1) {
+            // Añadir espacio uniforme entre palabras (excepto después de la última)
+            if (wordIndex < wordSegmentsArray.length - 1) {
                 currentX += spaceWidth;
             }
         });
@@ -283,15 +321,34 @@ async function generatePDFDesignacionSupervisor() {
         pdf.addImage(watermarkBase64, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
     }
 
+    function formatearFechaLarga(fecha) {
+            if (!fecha) return '';
+            
+            const meses = [
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+            ];
+
+            const [anio, mes, dia] = fecha.split("-");
+            const nombreMes = meses[parseInt(mes) - 1];
+
+            return `${parseInt(dia)} de ${nombreMes} del ${anio}`;
+        }
+        
+
     // Obtener datos del formulario
-    const fechaCreacion = document.getElementById('fechaCreacion')?.value || '1 de octubre de 2025';
-    const numeroContrato = document.getElementById('numeroContrato')?.value || '011025-594';
-    const nombreContratista = document.getElementById('nombreContratista')?.value || 'ALBEIRO CAMARGO ARENILLA';
-    const cedulaContratista = document.getElementById('cedulaContratista')?.value || '12.400.675';
-    const valorNumerico = document.getElementById('totalContrato')?.value || '1.550.000';
-    const nombreSupervisor = document.getElementById('nombreSupervisor')?.value || 'ISOLINA ALICIA VIDES MARTINEZ';
-    const cedulaSupervisor = document.getElementById('cedulaSupervisor')?.value || '39.023.360';
+    const fechaCreacion = formatearFechaLarga(document.getElementById('fechaCreacion').value);
+    const numeroContrato = document.getElementById('numeroContrato')?.value || '';
+    const cedulaContratista = document.getElementById('cedulaContratista')?.value || '';
+    const valorTotal = document.getElementById('totalContrato').value; // "1000000"
+    const nombreContratista = document.getElementById('nombreContratista')?.value || '';
+    const valorFormateado = Number(valorTotal).toLocaleString('es-CO');
+    const nombreSupervisor = document.getElementById('nombreSupervisor')?.value || '';
+    const cedulaSupervisor = document.getElementById('cedulaSupervisor')?.value || '';
     const cargoSupervisor = document.getElementById('cargoSupervisor')?.value || 'Secretaria Administrativa y Financiera Municipal';
+    const lugarExpedicion = document.getElementById('lugarExpedicion').value || '';
+    
+    
 
     // Definir frases en negrita
     const boldPhrases = [
@@ -319,7 +376,7 @@ async function generatePDFDesignacionSupervisor() {
     apoyo a la gestión No ${numeroContrato} de fecha ${fechaCreacion} firmado con ${nombreContratista}, identificado 
     con cedula de ciudadanía No ${cedulaContratista} expedida en El Banco, Magdalena, cuyo objeto es PRESTACIÓN DE 
     SERVICIOS DE APOYO A LA GESTIÓN COMO CELADOR EN LAS DIFERENTES DEPENDENCIAS DE LA ALCALDÍA MUNICIPAL DE EL BANCO, 
-    MAGDALENA, ($${valorNumerico}) pesos m/cte .`;
+    MAGDALENA, ($${valorFormateado}) pesos m/cte .`;
     currentY = renderParagraph(pdf, parrafoA, margins.left, currentY, textWidth, lineHeight, true, boldPhrases);
 
     currentY += 3;
@@ -342,13 +399,14 @@ async function generatePDFDesignacionSupervisor() {
     const designaWidth = pdf.getTextWidth(designa);
     pdf.text(designa, (pageWidth - designaWidth) / 2, currentY);
     currentY += 8;
+        
 
     // Artículo Primero
     const articuloPrimero = `ARTÍCULO PRIMERO: Desígnese como SUPERVISOR del contrato de prestación de servicios 
     y apoyo a la gestión No ${numeroContrato} de fecha ${fechaCreacion} firmado con ${nombreContratista}, identificado con 
     cedula de ciudadanía No ${cedulaContratista} expedida en El Banco, Magdalena, a la ${cargoSupervisor}, la cual en este 
     momento se encuentra en cabeza de la doctora ${nombreSupervisor}, identificada con la cédula de ciudadanía No ${cedulaSupervisor} 
-    expedida en El Banco, Magdalena`;
+    expedida en ${lugarExpedicion}.`;
     currentY = renderParagraph(pdf, articuloPrimero, margins.left, currentY, textWidth, lineHeight, true, boldPhrases);
 
     currentY += 3;
@@ -393,7 +451,7 @@ async function generatePDFDesignacionSupervisor() {
     pdf.text(cargoAlcaldesa, (pageWidth - cargoWidth) / 2, currentY);
 
     // Guardar PDF
-    pdf.save(`Designacion_Supervisor_${numeroContrato}.pdf`);
+    pdf.save(`DESIGNACION SUPERVISOR${nombreContratista} ${numeroContrato}.pdf`);
 }
 
 // Llamar a la función cuando se necesite
