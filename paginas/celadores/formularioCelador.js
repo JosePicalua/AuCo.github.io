@@ -98,7 +98,7 @@
         // Función para cargar la marca de agua
         async function loadWatermarkFormulario() {
             try {
-                const response = await fetch('../../componentes/marcadeaguaJURIDICA.png');
+                const response = await fetch('/AuCo.github.io/componentes/marcadeaguaJURIDICA.png');
                 const blob = await response.blob();
                 return new Promise((resolve) => {
                     const reader = new FileReader();

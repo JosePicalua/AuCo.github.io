@@ -1,6 +1,6 @@
 async function loadWatermarkCostanciaIdoneida() {
     try {
-        const response = await fetch('../../componentes/marcadeaguaJURIDICA.png');
+        const response = await fetch('/AuCo.github.io/componentes/marcadeaguaJURIDICA.png');
         
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status} - No se pudo cargar la imagen`);
