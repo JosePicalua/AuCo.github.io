@@ -98,7 +98,7 @@
         // Función para cargar la marca de agua
         async function loadWatermarkFormulario() {
             try {
-                const response = await fetch('../../componentes/marcadeaguaJURIDICA.png');
+                const response = await fetch('/AuCo.github.io/componentes/marcadeaguaJURIDICA.png');
                 const blob = await response.blob();
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -780,7 +780,7 @@ primer ${fechaCreacion}. `;
 
             pdf.save(`CONTRATO DE ${nombreContratista} con Numero de contrato ${numeroContrato} ${fechaCreacion}.pdf`);
 
-            //await generarPDFActaInicioSisben();
+            await generarPDFActaInicioSisben();
             //await generatePDFCertificadoNoExistencia();
             //await generatePDFConstanciaIdoneida();
             //await generatePDFDesignacionSupervisor();
