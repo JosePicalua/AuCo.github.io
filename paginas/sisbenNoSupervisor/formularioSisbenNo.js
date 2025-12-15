@@ -614,7 +614,6 @@ primer ${fechaCreacion}. `;
                 numeroMes,
                 valorFormateado,
                 calcularValorMensual,
-                sss
 
             ];
 
