@@ -61,7 +61,7 @@ function openModal(tipo) {
     } else if (tipo === "sisbenNoSupervisor") {
         url = "paginas/sisbenNoSupervisor/formularioSisbenNo.html";
         cssUrl = "paginas/celadores/formularioCelador.css";
-    } else if (tipo === "asedadora") {
+    } else if (tipo === "aseadora") {
         url = "paginas/aseadoras/formularioAseadoras.html";
         cssUrl = "paginas/celadores/formularioCelador.css";
     } else {
