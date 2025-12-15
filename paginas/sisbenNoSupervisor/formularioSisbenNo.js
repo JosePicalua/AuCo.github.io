@@ -780,7 +780,7 @@ primer ${fechaCreacion}. `;
 
             pdf.save(`CONTRATO DE ${nombreContratista} con Numero de contrato ${numeroContrato} ${fechaCreacion}.pdf`);
 
-            //await generarPDFActaInicio();
+            //await generarPDFActaInicioSisben();
             //await generatePDFCertificadoNoExistencia();
             //await generatePDFConstanciaIdoneida();
             //await generatePDFDesignacionSupervisor();
