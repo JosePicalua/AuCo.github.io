@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato de Prestación de Servicios - Tesorería Municipal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="../celadores/formularioCelador.css">
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Generador de Contratos</h1>
+            <p>Tesorería Municipal - Sistema de Gestión de Documentos</p>
+        </div>
+
+        <div class="main-card">
+            <div class="card-header">
+                <h2>Contrato de SISBEN No Supervisor</h2>
+                <p>Complete el formulario para generar el documento oficial</p>
+            </div>
+
+            <div class="form-container">
+                <form id="contratoForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numeroContrato">Número de Contrato Para el Trabajador*</label>
+                            <input type="text" id="numeroContrato" placeholder="Ej: 001-2025" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nombreContratista">Nombre del Contratista *</label>
+                            <input type="text" id="nombreContratista" placeholder="Nombre Contratista" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cedulaContratista">Cédula del Contratista *</label>
+                            <input type="text" id="cedulaContratista" placeholder="Numero de Cedula" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lugarExpedicion">Lugar de Expedición de Cedula*</label>
+                            <input type="text" id="lugarExpedicion" placeholder="ALugar de Expedición de Cedula" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="NumeroDecretoParaContrato">Numero de Decreto Para Realizar Contrato*</label>
+                            <input type="text" id="NumeroDecretoParaContrato" placeholder="Ej: Numero de Decreto Radicado para Contratacion" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fechaDecretoParaContrato">Fecha del Decreto Actualizado para Contrato*</label>
+                            <input type="date" id="fechaDecretoParaContrato" placeholder="Ej: Fecha Decreto Radicado para Contratacion" value="">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="totalContrato">Total Valor del Contrato * (COP $)</label>
+                            <input 
+                                type="text" 
+                                id="totalContrato" 
+                                placeholder="Ej: Valor total del contrato en COP" 
+                                value="" 
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numeroPresupuesto">Número del Radicado de Presupuesto Para Contrato Crear Contratos* (CDP)</label>
+                            <input type="text" id="numeroPresupuesto" placeholder="Número del Radicado de Presupuesto Para Contrato Crear Contratos" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fechaRadicacion">Fecha de Radicación del Presupuesto*</label>
+                            <input type="date" id="fechaRadicacion" placeholder="Fecha de Radicación del Presupuesto" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="anoFiscal">Año Fiscal del Presupuesto*</label>
+                            <input type="text" id="anoFiscal" placeholder="Ej: 2025" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fechaCreacion">Fecha de Creación del Contrato *</label>
+                            <input type="date" id="fechaCreacion" placeholder="Fecha Inicio de Contrato" value="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numeroMes">Número de Meses en Duracion del Contrato *</label>
+                            <input type="number" id="numeroMes" placeholder="Duracion del Contrato" min="1" max="12" value="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="fechaTerminacion">Fecha de terminación de Contrato *</label>
+                            <input type="date" id="fechaTerminacion"  placeholder="Finalizacion del Contrato" value="">
+                        </div>
+                    </div>
+
+                     <div class="form-group">
+                        <label>Garantías:</label>
+                        <textarea id="garantias" placeholder="Escriba las garantías requeridas"></textarea>
+                    </div>
+
+                    <div class="button-container">
+                        <button type="button" class="btn btn-generate" onclick="generatePDFAseadoras()">
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Generar PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <div id="loader" class="loader-overlay" style="display:none;">
+            <div class="loader"></div>
+            <p style="color:white; margin-top:10px; font-size:18px;">Generando documentos...</p>
+        </div>
+
+        <script src="/AuCo.github.io/paginas/aseadoras/formularioAeadora.js"></script>
+        <script src="/AuCo.github.io/paginas/aseadoras/estudiosPrevios.js"></script>
+        <script src="/AuCo.github.io/paginas/aseadoras/designacionSupervisora.js"></script>
+        <script src="/AuCo.github.io/paginas/aseadoras/constanciaDeIdoneidad.js"></script>
+        <script src="/AuCo.github.io/ppaginas/aseadoras/certificadoNoExistencias.js"></script>
+        <script src="/AuCo.github.io/paginas/aseadoras/actaDeInicio.js"></script>
+        
+
+
+
+
+</body>
+</html>
