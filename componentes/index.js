@@ -61,6 +61,12 @@ function openModal(tipo) {
     } else if (tipo === "sisbenNoSupervisor") {
         url = "paginas/sisbenNoSupervisor/formularioSisbenNo.html";
         cssUrl = "paginas/celadores/formularioCelador.css";
+    } else if (tipo === "asedadora") {
+        url = "paginas/aseadoras/formularioAseadoras.html";
+        cssUrl = "paginas/celadores/formularioCelador.css
+    } else {
+        console.error("Tipo de contrato no reconocido:", tipo);
+        return;
     }
 
     // Cargar el CSS dinámicamente
