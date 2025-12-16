@@ -671,11 +671,11 @@ contractual es el Municipio El Banco Magdalena. Para constancia, se firma en el 
 
             try {
                 const pdfs = [
-                    { fn: generarPDFActaInicio, nombre: 'Acta de Inicio' },
-                    { fn: generatePDFCertificadoNoExistencia, nombre: 'Certificado de No Existencia' },
-                    { fn: generatePDFConstanciaIdoneida, nombre: 'Constancia de Idoneidad' },
-                    { fn: generatePDFDesignacionSupervisor, nombre: 'Designación de Supervisor' },
-                    { fn: generatePDFEstudiosPrevios, nombre: 'Estudios Previos' }
+                    { fn: () => generarPDFActaInicio(), nombre: 'Acta de Inicio' },
+                    { fn: () => generatePDFCertificadoNoExistencia(), nombre: 'Certificado de No Existencia' },
+                    { fn: () => generatePDFConstanciaIdoneida(), nombre: 'Constancia de Idoneidad' },
+                    { fn: () => generatePDFDesignacionSupervisor(), nombre: 'Designación de Supervisor' },
+                    { fn: () => generatePDFEstudiosPrevios(), nombre: 'Estudios Previos' }
                 ];
                 
                 for (let i = 0; i < pdfs.length; i++) {
