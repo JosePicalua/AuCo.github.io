@@ -381,13 +381,13 @@ async function generatePDFEstudiosPreviosAseadora() {
     currentY += 5;
 
     currentY = checkAndAddPage(pdf, currentY, 15);
-    const objetoTitulo = 'PRESTACION DE SERVICIOS PROFESIONALES Y APOYO A LA GESTION COMO ASEADORA EN LAS DIFERENTES INSTALACIONES DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA';
+    const objetoTitulo = '2. OBJETO A CONTRATAR CON SUS ESPECIFICACIONES ';
     currentY = renderParagraph(pdf, objetoTitulo, margins.left, currentY, textWidth, lineHeight, false, boldPhrases);
     currentY += 5;
 
     // 2. OBJETO A CONTRATAR
     currentY = checkAndAddPage(pdf, currentY, 15);
-    currentY = renderParagraph(pdf, '2. OBJETO A CONTRATAR CON SUS ESPECIFICACIONES', margins.left, currentY, textWidth, lineHeight, false, boldPhrases);
+    currentY = renderParagraph(pdf, 'PRESTACION DE SERVICIOS PROFESIONALES Y APOYO A LA GESTION COMO ASEADORA EN LAS DIFERENTES INSTALACIONES DE LA ALCALDIA MUNICIPAL DE EL BANCO, MAGDALENA', margins.left, currentY, textWidth, lineHeight, false, boldPhrases);
     currentY += 3;
 
     currentY = checkAndAddPage(pdf, currentY, 10);
