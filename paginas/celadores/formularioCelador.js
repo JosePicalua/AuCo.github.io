@@ -24,9 +24,6 @@
                            'totalContrato', 'numeroPresupuesto', 'fechaRadicacion', 'anoFiscal', 
                            'fechaCreacion', 'numeroMes'];
         
-        formFields.forEach(field => {
-            document.getElementById(field).addEventListener('input');
-        });
 
         /**
          * Formatea un número agregando puntos como separador de miles.
@@ -664,12 +661,44 @@ contractual es el Municipio El Banco Magdalena. Para constancia, se firma en el 
 
             pdf.save(`CONTRATO DE ${nombreContratista} con Numero de contrato ${numeroContrato} ${fechaCreacion}.pdf`);
 
-            await generarPDFActaInicio();
-            await generatePDFCertificadoNoExistencia();
-            await generatePDFConstanciaIdoneida();
-            await generatePDFDesignacionSupervisor();
-            await generatePDFEstudiosPrevios();  // ← ÚLTIMA
+            // Mostrar loader y deshabilitar botón de guardar si existe
+            const loader = document.getElementById('loader');
+            const btnGuardar = document.querySelector('button[type="submit"]'); // o el selector de tu botón
+            const progressText = document.getElementById('progress-text');
 
-            limpiarFormulario();
-        
+            if (loader) loader.style.display = 'block';
+            if (btnGuardar) btnGuardar.disabled = true;
+
+            try {
+                const pdfs = [
+                    { fn: generarPDFActaInicio, nombre: 'Acta de Inicio' },
+                    { fn: generatePDFCertificadoNoExistencia, nombre: 'Certificado de No Existencia' },
+                    { fn: generatePDFConstanciaIdoneida, nombre: 'Constancia de Idoneidad' },
+                    { fn: generatePDFDesignacionSupervisor, nombre: 'Designación de Supervisor' },
+                    { fn: generatePDFEstudiosPrevios, nombre: 'Estudios Previos' }
+                ];
+                
+                for (let i = 0; i < pdfs.length; i++) {
+                    if (progressText) {
+                        progressText.textContent = `Guardando ${pdfs[i].nombre}... (${i + 1}/${pdfs.length})`;
+                    }
+                    await pdfs[i].fn();
+                }
+                
+                // Ocultar loader
+                if (loader) loader.style.display = 'none';
+                if (btnGuardar) btnGuardar.disabled = false;
+                if (progressText) progressText.textContent = '';
+                
+                limpiarFormulario();
+                
+            } catch (error) {
+                // Ocultar loader en caso de error
+                if (loader) loader.style.display = 'none';
+                if (btnGuardar) btnGuardar.disabled = false;
+                if (progressText) progressText.textContent = '';
+                
+                console.error('Error al generar PDFs:', error);
+                alert('Error al guardar los PDFs');
+            }
         }
