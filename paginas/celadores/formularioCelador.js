@@ -12,6 +12,13 @@
             
         });
 
+        document.getElementById('totalContrato').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            e.target.value = formatted;
+            
+        });
+
         // Actualizar preview en tiempo real para todos los campos
         const formFields = ['numeroContrato', 'nombreContratista', 'cedulaContratista', 'lugarExpedicion', 
                            'totalContrato', 'numeroPresupuesto', 'fechaRadicacion', 'anoFiscal', 

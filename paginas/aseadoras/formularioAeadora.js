@@ -1,11 +1,16 @@
     // Auto-capitalizar nombre contratista
-    document.getElementById('nombreContratista').addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-            
-        });
+       
 
         // Formatear cédula con puntos
         document.getElementById('cedulaContratista').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            e.target.value = formatted;
+            
+        });
+
+
+        document.getElementById('totalContrato').addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             let formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             e.target.value = formatted;
